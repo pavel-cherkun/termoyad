@@ -1,0 +1,473 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Термояд</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one-screen reactor — stellar core on the left, control rack on the right; stacks on phones. Single dark look (plasma on void) by choice. */
+:root{
+  --bg:#06050c; --panel:#0e0c18; --panel-2:#161326; --line:#272240;
+  --fg:#f3eefc; --muted:#8f88ad;
+  --plasma:#ff8a3d; --gamma:#6ef0ff; --gold:#ffd166; --danger:#ff4d6d; --iron:#9aa3b5; --be:#c6ff4d;
+  --display:'Unbounded',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px;overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;box-sizing:border-box}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:10px 12px}
+button:focus-visible{outline:2px solid var(--gamma);outline-offset:2px}
+button:disabled{opacity:.4;cursor:default}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr;gap:10px;max-width:1100px;margin:0 auto}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ttl{display:flex;flex-direction:column;gap:2px}
+h1{font-family:var(--display);font-weight:800;font-size:18px;margin:0;letter-spacing:.04em;color:#fff;text-shadow:0 0 18px rgba(255,138,61,.7)}
+.cls{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cls b{color:var(--plasma);font-weight:400}
+.stats{display:flex;gap:14px;margin-left:auto;font-variant-numeric:tabular-nums}
+.stat{display:flex;flex-direction:column;align-items:flex-end;min-width:0}
+.stat b{font-size:17px;font-weight:700}
+.stat span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stat.e b{color:var(--plasma)}.stat.au b{color:var(--gold)}.stat.rate b{color:var(--gamma)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;min-height:0}
+.glass{position:relative;display:flex;flex-direction:column;align-items:center;min-height:0;gap:8px}
+.area{flex:1;min-height:0;width:100%;display:grid;place-items:center}
+.order{width:100%;max-width:480px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 12px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(90deg,#1f1a0a,#161326);font-size:12px}
+.order[hidden]{display:none}
+.order i{width:22px;height:22px;border-radius:50%;box-shadow:0 0 10px currentColor;display:grid;place-items:center;font-style:normal;font-size:9px;font-weight:700;color:#000}
+.order b{color:var(--gold)}
+.order .t{font-variant-numeric:tabular-nums;color:var(--muted)}
+.stage{position:relative;border-radius:50% 50% 18px 18px / 12% 12% 18px 18px;
+  background:radial-gradient(ellipse at 50% 110%,#2a1208 0%,#120a18 45%,#07060e 100%);border:1px solid var(--line);
+  box-shadow:0 0 0 1px rgba(255,138,61,.1),0 0 60px rgba(255,138,61,.12) inset,0 20px 60px rgba(0,0,0,.7);overflow:hidden;touch-action:none;user-select:none}
+canvas{display:block;width:100%;height:100%}
+.flash{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(circle,rgba(255,255,255,.5),rgba(255,138,61,.25) 40%,rgba(110,240,255,.1))}
+.flash.on{opacity:1}
+.flash div{font-family:var(--display);font-weight:800;font-size:clamp(22px,6vw,44px);color:#fff;text-shadow:0 0 30px var(--plasma),0 0 60px var(--gamma);text-align:center;padding:0 16px}
+.flash small{display:block;font-family:var(--mono);font-size:13px;font-weight:400;color:var(--gold);margin-top:6px}
+.core{width:100%;max-width:480px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:11px;color:var(--muted)}
+.core .bar{height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden}
+.core .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--iron),var(--danger));transition:width .3s}
+.core b{color:var(--iron);font-variant-numeric:tabular-nums}
+.actions{display:flex;gap:8px;width:100%;max-width:480px}
+.actions button{flex:1;font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.actions .nova{border-color:var(--danger);color:#ffb3c1;background:linear-gradient(180deg,#2a0f1a,#1a0a12)}
+.actions .shake{border-color:var(--gamma);color:#c5fbff;background:linear-gradient(180deg,#0f2630,#0a1820)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto;min-width:0}
+.panel h2{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 2px;font-weight:500}
+.up{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;text-align:left;padding:9px 11px;background:var(--panel-2)}
+.up:not(:disabled):hover{border-color:var(--plasma)}
+.up .n{font-weight:700;font-size:13px}
+.up .d{grid-column:1;font-size:11px;color:var(--muted);line-height:1.35}
+.up .c{grid-row:1/3;grid-column:2;font-variant-numeric:tabular-nums;color:var(--plasma);font-weight:700;white-space:nowrap;text-align:right}
+.up .c small{display:block;color:var(--muted);font-weight:400;font-size:10px}
+.up.max .c{color:var(--gold)}
+.star{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;align-items:center;text-align:left;padding:8px 11px;background:var(--panel-2)}
+.star i{grid-row:1/3;width:26px;height:26px;border-radius:50%;box-shadow:0 0 12px currentColor}
+.star .n{font-weight:700;font-size:13px}
+.star .d{font-size:11px;color:var(--muted);line-height:1.35}
+.star.cur{border-color:var(--plasma)}
+.star.nxt{border-color:var(--gold)}
+.star:disabled{opacity:.45}
+.fates{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.fates span b{color:var(--fg)}
+.chain{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.chain i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;opacity:.2;box-shadow:0 0 8px currentColor;font-style:normal;font-size:9px;font-weight:700;color:#000}
+.chain i.seen{opacity:1}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--plasma);color:var(--fg);padding:10px 14px;border-radius:12px;opacity:0;transition:.3s;pointer-events:none;max-width:90vw;text-align:center;z-index:5}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.help{font-size:11px;color:var(--muted);line-height:1.45;margin:0}
+@media (max-width:760px){
+  body{overflow:auto}
+  .app{height:auto;min-height:100%}
+  main{grid-template-columns:1fr}
+  .area{flex:none;height:60vh;width:100%}
+  .stage{border-radius:18px}
+  .stats{gap:10px;width:100%;justify-content:space-between}
+  .stat{align-items:flex-start}
+  .panel{overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){.flash,.toast,.core .bar i{transition:none}}
+</style>
+
+<div class="app">
+  <header>
+    <div class="ttl"><h1>ТЕРМОЯД</h1><div class="cls">Звезда: <b id="clsName">Жёлтый карлик</b></div></div>
+    <div class="stats">
+      <div class="stat e"><b id="coins">0</b><span>МэВ</span></div>
+      <div class="stat rate"><b id="rate">0/с</b><span>светимость</span></div>
+      <div class="stat au"><b id="juice">0</b><span>золото ×<span id="jm">1.00</span></span></div>
+    </div>
+  </header>
+  <main>
+    <section class="glass">
+      <div class="order" id="order" hidden><i id="orderDot"></i><span>Обсерватория ждёт линию <b id="orderName"></b> — тапни по такому ядру<br><span id="orderReward"></span></span><span class="t" id="orderTime"></span></div>
+      <div class="area" id="area">
+        <div class="stage" id="stage">
+          <canvas id="cv"></canvas>
+          <div class="flash" id="flash"><div id="flashTitle">СВЕРХНОВАЯ<small id="flashInfo"></small></div></div>
+        </div>
+      </div>
+      <div class="core" id="coreRow"><span id="coreLabel">Железное ядро</span><div class="bar"><i id="coreBar"></i></div><b id="coreTxt">0 / 6</b></div>
+      <div class="actions" id="actRow">
+        <button class="shake" id="shakeBtn">Конвекция</button>
+        <button class="nova" id="pressBtn">Коллапс ядра</button>
+      </div>
+    </section>
+    <aside class="panel">
+      <h2>Реактор</h2>
+      <div id="ups"></div>
+      <h2 style="margin-top:6px">Следующая звезда</h2>
+      <div id="stars" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div class="fates" id="fates"></div>
+      <h2 style="margin-top:6px">Альфа-лестница</h2>
+      <div class="chain" id="chain"></div>
+      <p class="help">Тапни по звезде, чтобы впрыснуть ядро. Два одинаковых ядра сливаются и выделяют энергию. Исключение — гелий-4: два ядра дают бериллий-8, который живёт полторы секунды и распадается обратно, если в него не успеет влететь третий гелий. Это тройной альфа-процесс, и только так рождается углерод. Лестница кончается на железе-56: оно не светит, не сливается и давит на ядро. Судьба звезды решается в момент коллапса по её массе: лёгкая тихо станет белым карликом, тяжёлая взорвётся сверхновой и оставит нейтронную звезду или чёрную дыру. Исходы открывают новые классы звёзд для следующего цикла. На красном гиганте идёт s-процесс: медленные нейтроны делают из железа стронций, барий и свинец. Две нейтронные звезды можно слить в килоновую — так во Вселенной и появляется золото.</p>
+    </aside>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+const W=400,MAXT=10,BE=11;let H=560,TOP=74;
+const EL=[['H',1,'Водород'],['D',2,'Дейтерий'],['He',3,'Гелий-3'],['He',4,'Гелий-4'],['C',12,'Углерод'],['O',16,'Кислород'],['Ne',20,'Неон'],['Mg',24,'Магний'],['Si',28,'Кремний'],['S',32,'Сера'],['Fe',56,'Железо'],['Be',8,'Бериллий-8'],['Sr',88,'Стронций'],['Ba',138,'Барий'],['Pb',208,'Свинец']];
+const HUES=[200,190,170,55,35,20,330,300,265,230,215,80,150,95,350];
+const SAT=t=>t===MAXT?15:(t>=12?45:100);
+const SGOLD=[2,4,8]; // gold per s-process nucleus at collapse
+const RX=['p + p → D + e⁺ + ν','D + D → He-3 + n','He-3 + He-3 → He-4 + 2p','3α → C-12','C + α → O','O + α → Ne','Ne + α → Mg','Mg + α → Si','Si + α → S','S + … → Fe-56'];
+const BASE=t=>0.12*Math.pow(2.9,Math.min(t,MAXT));
+const UPS=[
+  {k:'mult',n:'Температура',d:'+25% светимости за уровень',base:40,g:1.55,max:60},
+  {k:'auto',n:'Аккреция',d:'Звезда сама захватывает водород. Выше уровень — чаще',base:120,g:1.7,max:25},
+  {k:'spawn',n:'CNO-цикл',d:'Чаще прилетают ядра старших ступеней',base:600,g:2.4,max:5},
+  {k:'dense',n:'Гравитация',d:'Ядра на 3% плотнее: в звезду влезает больше',base:350,g:1.9,max:10},
+  {k:'magnet',n:'Туннелирование',d:'Одинаковые ядра тянутся друг к другу сквозь барьер',base:2500,g:2.2,max:6},
+];
+// star classes: top = overflow line, grav, dense/spawn/magnet bonuses, core = iron limit, inc = income mult, off = offline mult, eat = black-hole horizon
+const CLASSES={
+  yellow:{n:'Жёлтый карлик',hue:48,d:'Обычная звезда главной последовательности. Без модификаторов.',top:74,grav:1,dense:0,spawn:0,magnet:0,core:6,inc:1,off:0.5,unlock:()=>true},
+  red:{n:'Красный карлик',hue:10,d:'Маленькая и холодная, зато горит триллионы лет: офлайн-доход ×2. Места мало, светимость ×0.8.',top:150,grav:0.8,dense:0,spawn:0,magnet:0,core:6,inc:0.8,off:1,unlock:()=>true},
+  giant:{n:'Красный гигант',hue:22,d:'Раздутая оболочка: ядра плотнее, светимость ×1.2. В оболочке идёт s-процесс: сверху капают медленные нейтроны, железо ловит их по три и становится стронцием, барием, свинцом. Они не давят на ядро и дорого ценятся при коллапсе.',top:60,grav:0.9,dense:2,spawn:0,magnet:0,core:6,inc:1.2,off:0.6,neut:3.5,unlock:s=>s.fates.wd+s.fates.ns+s.fates.bh>0,req:'нужен любой коллапс'},
+  blue:{n:'Голубой гигант',hue:210,d:'Огромная и горячая: ядра плотнее, тяжёлые прилетают чаще, светимость ×1.4. Живёт быстро: коллапс уже при 4 железных ядрах.',top:74,grav:1.1,dense:3,spawn:1,magnet:0,core:4,inc:1.4,off:0.5,unlock:s=>s.fates.ns+s.fates.bh>0,req:'нужна любая сверхновая'},
+  neutron:{n:'Нейтронная звезда',hue:185,d:'Чудовищная гравитация: ядра тяжёлые и быстрые, туннелирование +3, светимость ×2. Но звезда крошечная.',top:220,grav:2.4,dense:1,spawn:0,magnet:3,core:6,inc:2,off:0.5,unlock:s=>s.fates.ns>0,req:'нужен исход «нейтронная звезда»'},
+  bh:{n:'Чёрная дыра',hue:280,d:'Горизонт на дне каждые 6 секунд проглатывает нижнее ядро и отдаёт его энергию ×120 (железо — ещё и золото). Железо не копится, коллапса по ядру нет.',top:74,grav:1.3,dense:0,spawn:0,magnet:0,core:Infinity,inc:1,off:0.5,eat:6,unlock:s=>s.fates.bh>0,req:'нужен исход «чёрная дыра»'},
+};
+let S={coins:0,juice:0,up:{mult:0,auto:0,spawn:0,dense:0,magnet:0},seen:[true],last:Date.now(),cls:'yellow',next:'yellow',fates:{wd:0,ns:0,bh:0}};
+let balls=[],parts=[],texts=[],neut=[],neutT=2,id=0,aimX=W/2,aiming=false,dropCd=0,autoCd=0,danger=0,shakeCd=0,next=0,time=0,fl=0,eatT=6;
+let combo=0,comboT=0,order=null,orderCd=35;
+
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const $=s=>document.getElementById(s);
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const C=()=>CLASSES[S.cls]||CLASSES.yellow;
+const RAD=t=>(t===BE?RAD(3)*1.2:(14+(t>=12?10+(t-11)*0.3:t)*7.2)*(1-0.03*(S.up.dense+C().dense)));
+
+function cost(u){return Math.floor(u.base*Math.pow(u.g,S.up[u.k]));}
+function mult(){return Math.pow(1.25,S.up.mult)*(1+0.05*S.juice)*C().inc;}
+function income(){let s=0;for(const b of balls)if(b.t<MAXT)s+=BASE(b.t);return s*mult();}
+function ironCount(){let n=0;for(const b of balls)if(b.t===MAXT)n++;return n;}
+function massTotal(){let m=0;for(const b of balls)m+=EL[b.t][1];return m;}
+function fmt(n){
+  if(n<1000)return n<100?n.toFixed(1):Math.floor(n).toString();
+  const u=['K','M','B','T','Qa','Qi'];let i=-1;while(n>=1000&&i<u.length-1){n/=1000;i++}
+  return n.toFixed(n<10?2:1)+u[i];
+}
+function col(t,a=1){return `hsla(${HUES[t]},${SAT(t)}%,65%,${a})`;}
+function label(t){return EL[t][0]+'-'+EL[t][1];}
+function rollTier(){
+  const sp=S.up.spawn+C().spawn;
+  const w=[10,6,3,1,0.4,0.1].map((v,i)=>v*Math.pow(1.6,sp*i));
+  const lim=Math.min(5,2+sp);let tot=0;for(let i=0;i<=lim;i++)tot+=w[i];
+  let r=Math.random()*tot;for(let i=0;i<=lim;i++){r-=w[i];if(r<=0)return i;}return 0;
+}
+function spawn(x,t){
+  const r=RAD(t);x=Math.max(r+2,Math.min(W-r-2,x));
+  balls.push({id:id++,x,y:r+6,vx:0,vy:0,r,t,age:0});
+  if(!S.seen[t]){S.seen[t]=true;renderChain();}
+}
+function drop(x){if(dropCd>0)return;spawn(x,next);next=rollTier();dropCd=0.4;}
+
+/* ---------- physics ---------- */
+function mergeKind(a,b){
+  if(a.t===BE&&b.t===BE)return 0;
+  if(a.t===BE||b.t===BE)return (a.t===3||b.t===3)?'triple':0;
+  if(a.t!==b.t||a.t>=MAXT)return 0;
+  return a.t===3?'be':'merge';
+}
+function step(dt){
+  const G=1500*C().grav,mag=(S.up.magnet+C().magnet)*60;
+  for(const b of balls){b.age+=dt;b.vy+=G*dt*(b.t>=MAXT&&b.t!==BE?1.6:1);b.vx*=0.995;
+    if(b.t===BE){b.life-=dt;if(b.life<=0){b.dead=true;decayBe(b);}}}
+  balls=balls.filter(b=>!b.dead);
+  if(mag>0){for(let i=0;i<balls.length;i++){const a=balls[i];if(a.t>=MAXT&&a.t!==BE)continue;let best=null,bd=1e9;
+    for(let j=0;j<balls.length;j++){if(i===j)continue;const c=balls[j];
+      const ok=c.t===a.t||(a.t===3&&c.t===BE)||(a.t===BE&&c.t===3);if(!ok)continue;
+      const d=Math.hypot(c.x-a.x,c.y-a.y);if(d<bd){bd=d;best=c;}}
+    if(best&&bd<220){a.vx+=(best.x-a.x)/bd*mag*dt;a.vy+=(best.y-a.y)/bd*mag*dt*0.4;}}}
+  for(const b of balls){b.x+=b.vx*dt;b.y+=b.vy*dt;}
+  for(let it=0;it<3;it++){
+    for(let i=0;i<balls.length;i++){const a=balls[i];if(a.dead)continue;
+      for(let j=i+1;j<balls.length;j++){const b=balls[j];if(b.dead)continue;
+        let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=a.r+b.r;
+        if(d>=min)continue;if(d<0.01){dx=1;dy=0;d=1;}
+        const mk=it===0?mergeKind(a,b):0;
+        if(mk){merge(a,b,mk);continue;}
+        const hv=q=>q.t>=MAXT&&q.t!==BE?3:1;
+        const nx=dx/d,ny=dy/d,ov=(min-d),ma=a.r*a.r*hv(a),mb=b.r*b.r*hv(b),tot=ma+mb;
+        a.x-=nx*ov*(mb/tot);a.y-=ny*ov*(mb/tot);b.x+=nx*ov*(ma/tot);b.y+=ny*ov*(ma/tot);
+        const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;if(rv<0){const j_=-(1+0.12)*rv/(1/ma+1/mb);
+          a.vx-=j_*nx/ma;a.vy-=j_*ny/ma;b.vx+=j_*nx/mb;b.vy+=j_*ny/mb;}
+      }}
+    for(const b of balls){
+      if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx)*0.3;}if(b.x>W-b.r){b.x=W-b.r;b.vx=-Math.abs(b.vx)*0.3;}
+      if(b.y>H-b.r){b.y=H-b.r;b.vy=-Math.abs(b.vy)*0.15;b.vx*=0.96;}
+    }
+  }
+  balls=balls.filter(b=>!b.dead);
+  let hot=false;for(const b of balls)if(b.age>1.2&&b.y-b.r<TOP&&Math.abs(b.vy)<60)hot=true;
+  danger=hot?danger+dt:Math.max(0,danger-dt*2);
+  if(danger>3)collapse('звезда раздулась');
+  if(ironCount()>=C().core)collapse('железное ядро схлопнулось');
+}
+function merge(a,b,kind){
+  a.dead=b.dead=true;const x=(a.x+b.x)/2,y=(a.y+b.y)/2;
+  if(kind==='be'){
+    balls.push({id:id++,x,y,vx:(a.vx+b.vx)/2,vy:-40,r:RAD(BE),t:BE,age:2,life:1.5});
+    texts.push({x,y,s:'Be-8 · нужен третий α',c:'#c6ff4d',l:1.2});burst(x,y,BE,6);
+    if(!S.seen[BE]){S.seen[BE]=true;toast('Бериллий-8: распадётся через полторы секунды, если не влетит третий гелий');}
+    return;
+  }
+  const t=kind==='triple'?4:a.t+1,r=RAD(t),k=kind==='triple'?3:1;
+  balls.push({id:id++,x,y,vx:(a.vx+b.vx)/2,vy:-60,r,t,age:2});
+  combo=comboT>0?combo+1:1;comboT=1.5;
+  const gain=BASE(t)*mult()*8*combo*k;S.coins+=gain;
+  burst(x,y,t,10+t*2+(k>1?20:0));gamma(x,y);
+  texts.push({x,y,s:'+'+fmt(gain)+(combo>1?' ×'+combo:''),c:combo>1||k>1?'#ffd166':col(t),l:1.2});
+  texts.push({x,y:y+16,s:RX[t-1],c:'rgba(243,238,252,.75)',l:1.4,sm:true});
+  if(!S.seen[t]){S.seen[t]=true;renderChain();toast(t===MAXT?'Железо-56. Дальше лестницы нет — оно только давит на ядро':'Новая ступень: '+EL[t][2]+' '+label(t));}
+}
+function decayBe(b){
+  const r=RAD(3);
+  balls.push({id:id++,x:b.x-r*0.6,y:b.y,vx:-120,vy:-80,r,t:3,age:2},{id:id++,x:b.x+r*0.6,y:b.y,vx:120,vy:-80,r,t:3,age:2});
+  texts.push({x:b.x,y:b.y,s:'распад',c:'#8f88ad',l:0.8});
+}
+function burst(x,y,t,n){if(reduce)return;for(let i=0;i<n;i++){const a=Math.random()*6.28,s=80+Math.random()*220;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:0.5+Math.random()*0.4,t});}}
+/* ---------- s-process (slow neutron capture) ---------- */
+function neutrons(dt){
+  if(!C().neut){neut=[];return;}
+  neutT-=dt;if(neutT<=0){neutT=C().neut;neut.push({x:20+Math.random()*(W-40),y:-4,vx:(Math.random()-0.5)*40,vy:50,l:14});}
+  for(const n of neut){n.x+=n.vx*dt;n.y+=n.vy*dt;n.vy+=25*dt;n.l-=dt;n.vx+=Math.sin(time*2+n.x)*20*dt;
+    if(n.x<4||n.x>W-4)n.vx*=-1;if(n.y>H-4){n.y=H-4;n.vy=-Math.abs(n.vy)*0.5;}
+    for(const b of balls){if(b.t<MAXT||b.t===BE||b.t>=14)continue;
+      if(Math.hypot(b.x-n.x,b.y-n.y)<=b.r+3){n.l=0;b.n=(b.n||0)+1;
+        if(b.n>=3){b.n=0;b.t=b.t===MAXT?12:b.t+1;b.r=RAD(b.t);burst(b.x,b.y,b.t,16);
+          texts.push({x:b.x,y:b.y-b.r-6,s:'s-процесс → '+label(b.t),c:col(b.t),l:1.6});
+          if(!S.seen[b.t]){S.seen[b.t]=true;renderChain();toast(EL[b.t][2]+': тяжелее железа, в ядро не давит, при коллапсе даёт '+SGOLD[b.t-12]+' золота');}}
+        else texts.push({x:n.x,y:n.y,s:'n',c:'#bfc4d6',l:0.6,sm:true});break;}}}
+  neut=neut.filter(n=>n.l>0);
+}
+function gamma(x,y){if(reduce)return;for(let i=0;i<3;i++){const a=Math.random()*6.28;parts.push({x,y,vx:Math.cos(a)*700,vy:Math.sin(a)*700,l:0.35,t:-1});}}
+
+/* ---------- fate ---------- */
+function collapse(why){
+  if(!balls.length)return;
+  const M=massTotal(),iron=ironCount(),heavy=iron>=Math.min(C().core,6)||M>=420;
+  let val=0,j=0;for(const b of balls){val+=BASE(b.t)*mult()*45;j+=Math.pow(1.8,Math.min(b.t,MAXT))/20;if(b.t>=12)j+=SGOLD[b.t-12];}
+  let fate,title;
+  if(!heavy){fate='wd';title='БЕЛЫЙ КАРЛИК';j=Math.floor(j);}
+  else if(M>=700){fate='bh';title='СВЕРХНОВАЯ → ЧЁРНАЯ ДЫРА';j=Math.floor(j*2)+iron*2;val*=1.5;}
+  else{fate='ns';title='СВЕРХНОВАЯ → НЕЙТРОННАЯ ЗВЕЗДА';j=Math.floor(j*1.5)+iron*2;}
+  S.fates[fate]++;S.coins+=val;S.juice+=j;
+  for(const b of balls)burst(b.x,b.y,b.t,5);balls=[];danger=0;
+  const sw=S.next!==S.cls;S.cls=S.next;applyClass();
+  $('flashTitle').firstChild.textContent=title;
+  $('flashInfo').textContent=`масса ${M} · +${fmt(val)} МэВ · +${j} золота${why?' · '+why:''}${sw?' · новая звезда: '+C().n:''}`;
+  $('flash').classList.add('on');fl=2.8;renderStars();save();
+}
+function kilonova(){
+  if(S.fates.ns<2)return;
+  const g=30+5*S.fates.bh;S.fates.ns-=2;S.fates.bh++;S.juice+=g;
+  for(let i=0;i<12;i++)burst(W/2+(Math.random()-0.5)*200,H/2+(Math.random()-0.5)*200,12+Math.floor(Math.random()*3),20);
+  $('flashTitle').firstChild.textContent='КИЛОНОВАЯ';
+  $('flashInfo').textContent=`две нейтронные звезды слились · r-процесс · +${g} золота · осталась чёрная дыра`;
+  $('flash').classList.add('on');fl=3;renderStars();save();
+}
+function applyClass(){TOP=C().top;neut=[];for(const b of balls)b.r=RAD(b.t);$('clsName').textContent=C().n;
+  $('coreLabel').textContent=C().eat?'Горизонт':'Железное ядро';}
+function shake(){if(shakeCd>0)return;shakeCd=8;for(const b of balls){b.vx+=(Math.random()-0.5)*700;b.vy-=200+Math.random()*300;}}
+function horizon(dt){
+  if(!C().eat)return;eatT-=dt;if(eatT>0||!balls.length)return;eatT=C().eat;
+  let low=balls[0];for(const b of balls)if(b.y>low.y)low=b;
+  low.dead=true;balls=balls.filter(b=>!b.dead);
+  const gain=BASE(low.t)*mult()*120;S.coins+=gain;let s='+'+fmt(gain);
+  if(low.t===MAXT){S.juice+=1;s+=' · +1 золото';}
+  burst(low.x,low.y,low.t,14);texts.push({x:low.x,y:low.y-20,s,c:'#c7a6ff',l:1.3});
+}
+
+/* ---------- orders ---------- */
+function newOrder(){
+  let top=0;for(let t=0;t<=MAXT;t++)if(S.seen[t])top=t;
+  const t=Math.max(1,Math.min(MAXT-1,top-1+Math.floor(Math.random()*3)));
+  order={t,coins:BASE(t)*mult()*400,juice:1+Math.floor(t/2),left:90};
+  const d=$('orderDot');d.style.color=col(t);d.style.background=col(t);d.textContent=EL[t][0];
+  $('orderName').textContent=EL[t][2]+' '+label(t);$('orderReward').textContent=`+${fmt(order.coins)} МэВ · +${order.juice} золота`;
+  $('order').hidden=false;toast('Обсерватория просит '+label(t));resize();
+}
+function endOrder(){order=null;$('order').hidden=true;orderCd=30+Math.random()*30;resize();}
+function tryDeliver(x,y){
+  if(!order)return false;
+  for(const b of balls){if(b.t===order.t&&Math.hypot(b.x-x,b.y-y)<=b.r){
+    b.dead=true;balls=balls.filter(q=>!q.dead);S.coins+=order.coins;S.juice+=order.juice;
+    burst(b.x,b.y,b.t,30);texts.push({x:b.x,y:b.y,s:'СПЕКТР +'+fmt(order.coins),c:'#ffd166',l:1.6});endOrder();save();return true;}}
+  return false;
+}
+
+/* ---------- render ---------- */
+function draw(){
+  const k=cv.width/W;ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
+  const c=C(),ir=c.eat?0:ironCount()/c.core;
+  const pg=ctx.createRadialGradient(W/2,H+40,10,W/2,H+40,H*0.8);
+  pg.addColorStop(0,`hsla(${c.hue},90%,55%,${0.2+0.3*ir})`);pg.addColorStop(1,`hsla(${c.hue},90%,55%,0)`);ctx.fillStyle=pg;ctx.fillRect(0,0,W,H);
+  if(c.eat){const hg=ctx.createRadialGradient(W/2,H+30,0,W/2,H+30,150);hg.addColorStop(0,'#000');hg.addColorStop(0.5,'rgba(0,0,0,.95)');hg.addColorStop(0.75,`rgba(160,110,255,${0.35+0.25*Math.sin(time*3)})`);hg.addColorStop(1,'rgba(160,110,255,0)');
+    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(W/2,H+30,150,0,6.28);ctx.fill();}
+  ctx.strokeStyle='rgba(110,240,255,.05)';ctx.lineWidth=1;ctx.beginPath();
+  for(let x=0;x<=W;x+=40){ctx.moveTo(x,0);ctx.lineTo(x,H);}for(let y=0;y<=H;y+=40){ctx.moveTo(0,y);ctx.lineTo(W,y);}ctx.stroke();
+  const dl=danger>0?Math.min(1,danger/3):0;
+  ctx.setLineDash([6,8]);ctx.strokeStyle=dl?`rgba(255,77,109,${0.4+0.6*dl})`:'rgba(143,136,173,.35)';ctx.lineWidth=dl?2:1;
+  ctx.beginPath();ctx.moveTo(0,TOP);ctx.lineTo(W,TOP);ctx.stroke();ctx.setLineDash([]);
+  if(dl){ctx.fillStyle=`rgba(255,77,109,${0.08*dl})`;ctx.fillRect(0,0,W,TOP);}
+  if(dropCd<=0){const r=RAD(next);const x=Math.max(r+2,Math.min(W-r-2,aimX));
+    ctx.strokeStyle=col(next,0.25);ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(x,r+6);ctx.lineTo(x,H);ctx.stroke();ctx.setLineDash([]);
+    nucleus(x,r+6,r,next,0.55);}
+  for(const n of neut){ctx.fillStyle='#bfc4d6';ctx.shadowColor='#fff';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(n.x,n.y,3,0,6.28);ctx.fill();ctx.shadowBlur=0;}
+  for(const b of balls){nucleus(b.x,b.y,b.r,b.t,b.t===BE?0.6+0.4*Math.abs(Math.sin(time*18)):1,b);
+    if(b.n){ctx.fillStyle='#bfc4d6';for(let i=0;i<b.n;i++){const a=-Math.PI/2+i*0.6;ctx.beginPath();ctx.arc(b.x+Math.cos(a)*(b.r+5),b.y+Math.sin(a)*(b.r+5),2.5,0,6.28);ctx.fill();}}
+    if(order&&b.t===order.t){ctx.strokeStyle='#ffd166';ctx.lineWidth=2.5;ctx.setLineDash([4,4]);ctx.lineDashOffset=-time*30;ctx.beginPath();ctx.arc(b.x,b.y,b.r+5,0,6.28);ctx.stroke();ctx.setLineDash([]);}}
+  for(const p of parts){ctx.globalAlpha=Math.max(0,p.l/0.9);
+    if(p.t<0){ctx.strokeStyle='#6ef0ff';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*0.03,p.y-p.vy*0.03);ctx.stroke();}
+    else{ctx.fillStyle=col(p.t);ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,6.28);ctx.fill();}}
+  ctx.globalAlpha=1;ctx.font='bold 13px JetBrains Mono, monospace';ctx.textAlign='center';
+  for(const t of texts){ctx.globalAlpha=Math.min(1,t.l);ctx.fillStyle=t.c;ctx.shadowColor=t.c;ctx.shadowBlur=t.sm?0:10;ctx.font=t.sm?'10px JetBrains Mono, monospace':'bold 13px JetBrains Mono, monospace';ctx.fillText(t.s,t.x,t.y);}
+  ctx.shadowBlur=0;ctx.globalAlpha=1;
+  if(combo>1&&comboT>0){ctx.font='800 22px Unbounded, sans-serif';ctx.textAlign='right';ctx.fillStyle='#ffd166';ctx.shadowColor='#ffd166';ctx.shadowBlur=16;ctx.fillText('×'+combo+' ЦЕПЬ',W-12,TOP+30);ctx.shadowBlur=0;}
+}
+function nucleus(x,y,r,t,a,b){
+  const h=HUES[t],s=SAT(t);
+  const g=ctx.createRadialGradient(x-r*0.3,y-r*0.35,r*0.1,x,y,r);
+  g.addColorStop(0,`hsla(${h},${s}%,82%,${a})`);g.addColorStop(0.65,`hsla(${h},${s}%,55%,${a*0.9})`);g.addColorStop(1,`hsla(${h},${s}%,30%,${a*0.95})`);
+  ctx.fillStyle=g;ctx.shadowColor=`hsla(${h},${s}%,60%,${a})`;ctx.shadowBlur=t===MAXT?4:r*0.6;
+  ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.fill();ctx.shadowBlur=0;
+  if(t<=3){const n=EL[t][1];ctx.fillStyle=`rgba(255,255,255,${a*0.55})`;
+    for(let i=0;i<n;i++){const ang=i/n*6.28+t,rr=n===1?0:r*0.4;ctx.beginPath();ctx.arc(x+Math.cos(ang)*rr,y+Math.sin(ang)*rr,r*0.28,0,6.28);ctx.fill();}}
+  ctx.strokeStyle=`hsla(${h},${s}%,85%,${a*0.8})`;ctx.lineWidth=1.5;ctx.stroke();
+  if(t===BE&&b){ctx.strokeStyle='#c6ff4d';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,r+4,-Math.PI/2,-Math.PI/2+6.28*(b.life/1.5));ctx.stroke();}
+  if(r>=24||t===BE){ctx.fillStyle=`rgba(5,5,15,${a*0.85})`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=`bold ${Math.max(9,r*0.5)}px JetBrains Mono, monospace`;ctx.fillText(EL[t][0],x,y-r*0.08);
+    ctx.font=`${Math.max(7,r*0.26)}px JetBrains Mono, monospace`;ctx.fillText(EL[t][1],x,y+r*0.36);ctx.textBaseline='alphabetic';}
+}
+
+/* ---------- UI ---------- */
+function renderUps(){
+  const box=$('ups');box.innerHTML='';
+  for(const u of UPS){const lv=S.up[u.k],max=lv>=u.max,c=cost(u);
+    const b=document.createElement('button');b.className='up'+(max?' max':'');b.id='up-'+u.k;b.disabled=max||S.coins<c;
+    let extra='';if(u.k==='auto'&&lv>0)extra=` · раз в ${autoInt().toFixed(1)}с`;if(u.k==='mult')extra=` · ×${Math.pow(1.25,lv).toFixed(2)}`;
+    b.innerHTML=`<span class="n">${u.n} <span style="color:var(--muted);font-weight:400">${lv}/${u.max}</span></span><span class="d">${u.d}${extra}</span><span class="c">${max?'MAX':fmt(c)}<small>${max?'':'МэВ'}</small></span>`;
+    b.onclick=()=>{if(S.coins>=c&&!max){S.coins-=c;S.up[u.k]++;if(u.k==='dense')for(const x of balls)x.r=RAD(x.t);renderUps();save();}};
+    box.appendChild(b);}
+}
+function refreshUps(){for(const u of UPS){const b=$('up-'+u.k);if(b)b.disabled=S.up[u.k]>=u.max||S.coins<cost(u);}}
+function renderStars(){
+  const box=$('stars');box.innerHTML='';
+  for(const k in CLASSES){const c=CLASSES[k],ok=c.unlock(S);
+    const b=document.createElement('button');b.className='star'+(S.cls===k?' cur':'')+(S.next===k&&S.cls!==k?' nxt':'');b.disabled=!ok;
+    const tag=S.cls===k?' · сейчас':(S.next===k?' · следующая':'');
+    b.innerHTML=`<i style="color:hsl(${c.hue},90%,60%);background:hsl(${c.hue},90%,60%)"></i><span class="n">${c.n}<span style="color:var(--muted);font-weight:400">${tag}</span></span><span class="d">${ok?c.d:'Закрыто: '+c.req}</span>`;
+    b.onclick=()=>{S.next=k;if(!balls.length){S.cls=k;applyClass();}renderStars();save();};
+    box.appendChild(b);}
+  $('fates').innerHTML=`<span>Белые карлики <b>${S.fates.wd}</b></span><span>Нейтронные <b>${S.fates.ns}</b></span><span>Чёрные дыры <b>${S.fates.bh}</b></span>`;
+  const kb=document.createElement('button');kb.className='up';kb.disabled=S.fates.ns<2;kb.style.marginTop='4px';
+  kb.innerHTML=`<span class="n">Килоновая</span><span class="d">Слить две нейтронные звезды. r-процесс выбрасывает золото: +${30+5*S.fates.bh}. После слияния остаётся чёрная дыра.</span><span class="c">${S.fates.ns}/2<small>нейтронных</small></span>`;
+  kb.onclick=kilonova;$('fates').appendChild(kb);
+}
+function autoInt(){return 6*Math.pow(0.86,S.up.auto-1);}
+function renderChain(){const c=$('chain');c.innerHTML='';for(let t=0;t<=MAXT;t++){const i=document.createElement('i');i.style.color=col(t);i.style.background=col(t);i.className=S.seen[t]?'seen':'';i.title=EL[t][2]+' '+label(t);i.textContent=S.seen[t]?EL[t][0]:'?';c.appendChild(i);
+  if(t===3){const j=document.createElement('i');j.style.color=col(BE);j.style.background=col(BE);j.className=S.seen[BE]?'seen':'';j.title='Бериллий-8 (тройной альфа)';j.textContent=S.seen[BE]?'Be':'3α';j.style.borderRadius='6px';c.appendChild(j);}}
+  for(let t=12;t<=14;t++){const j=document.createElement('i');j.style.color=col(t);j.style.background=col(t);j.className=S.seen[t]?'seen':'';j.title=EL[t][2]+' (s-процесс)';j.textContent=S.seen[t]?EL[t][0]:'s';j.style.borderRadius='6px';c.appendChild(j);}}
+let toastT;function toast(s){const t=$('toast');t.textContent=s;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3600);}
+function hud(){
+  $('coins').textContent=fmt(S.coins);$('rate').textContent=fmt(income())+'/с';
+  $('juice').textContent=S.juice;$('jm').textContent=(1+0.05*S.juice).toFixed(2);
+  if(C().eat){$('coreBar').style.width=(100-eatT/C().eat*100)+'%';$('coreTxt').textContent='масса '+massTotal();}
+  else{const ic=ironCount();$('coreBar').style.width=(ic/C().core*100)+'%';$('coreTxt').textContent=ic+' / '+C().core+' · масса '+massTotal();}
+  $('shakeBtn').textContent=shakeCd>0?`Конвекция ${Math.ceil(shakeCd)}с`:'Конвекция';$('shakeBtn').disabled=shakeCd>0;
+  $('pressBtn').disabled=!balls.length;
+}
+
+/* ---------- save ---------- */
+function snap(){return {coins:S.coins,juice:S.juice,up:S.up,seen:S.seen,cls:S.cls,next:S.next,fates:S.fates,last:Date.now(),balls:balls.map(b=>[Math.round(b.x),Math.round(b.y),b.t===BE?3:b.t,b.n||0])};}
+function save(){try{localStorage.setItem('fusion-core',JSON.stringify(snap()));}catch(e){}}
+function load(d){
+  if(!d)return;S.coins=d.coins||0;S.juice=d.juice||0;Object.assign(S.up,d.up||{});S.seen=d.seen||[true];
+  S.cls=CLASSES[d.cls]?d.cls:'yellow';S.next=CLASSES[d.next]?d.next:S.cls;Object.assign(S.fates,d.fates||{});
+  balls=(d.balls||[]).filter(b=>EL[b[2]]).map(([x,y,t,n])=>({id:id++,x,y,vx:0,vy:0,r:RAD(t),t,age:2,n:n||0}));
+  if(d.last){const sec=Math.min(8*3600,(Date.now()-d.last)/1000);if(sec>60){const g=income()*sec*C().off;S.coins+=g;toast(`Пока тебя не было (${Math.floor(sec/60)} мин), звезда насветила +${fmt(g)} МэВ`);}}
+}
+
+/* ---------- loop ---------- */
+function resize(){
+  const area=$('area'),st=$('stage'),mobile=innerWidth<=760;
+  if(mobile){const top=area.getBoundingClientRect().top;
+    const below=$('coreRow').offsetHeight+$('actRow').offsetHeight+16+34;
+    area.style.height=Math.max(320,innerHeight-top-below)+'px';}
+  else area.style.height='';
+  const a=area.getBoundingClientRect();
+  let w=mobile?a.width:Math.min(a.width,480),h=a.height;
+  if(h>w*1.9)h=w*1.9;if(h<w*0.9)w=h/0.9;
+  w=Math.max(120,w);h=Math.max(120,h);
+  st.style.width=w+'px';st.style.height=h+'px';
+  H=Math.round(W*h/w);for(const b of balls)if(b.y>H-b.r)b.y=H-b.r;
+  const dpr=Math.min(2,devicePixelRatio||1);cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+}
+let lastT=performance.now(),acc=0,hudT=0,saveT=0;
+function frame(now){
+  let dt=Math.min(0.1,(now-lastT)/1000);lastT=now;acc+=dt;const h=1/120;let n=0;
+  while(acc>=h&&n<8){step(h);acc-=h;n++;}
+  S.coins+=income()*dt;dropCd-=dt;shakeCd-=dt;time+=dt;horizon(dt);neutrons(dt);
+  if(comboT>0){comboT-=dt;if(comboT<=0)combo=0;}
+  if(order){order.left-=dt;$('orderTime').textContent=Math.ceil(order.left)+'с';if(order.left<=0){toast('Обсерватория ушла');endOrder();}}
+  else{orderCd-=dt;if(orderCd<=0&&balls.length>3)newOrder();}
+  if(S.up.auto>0){autoCd-=dt;if(autoCd<=0){spawn(40+Math.random()*(W-80),rollTier());autoCd=autoInt();}}
+  for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.t>=0)p.vy+=600*dt;p.l-=dt;}parts=parts.filter(p=>p.l>0);
+  for(const t of texts){t.y-=40*dt;t.l-=dt;}texts=texts.filter(t=>t.l>0);
+  if(fl>0){fl-=dt;if(fl<=0)$('flash').classList.remove('on');}
+  hudT+=dt;if(hudT>0.15){hudT=0;hud();refreshUps();}
+  saveT+=dt;if(saveT>5){saveT=0;save();}
+  draw();requestAnimationFrame(frame);
+}
+function px(e){const r=cv.getBoundingClientRect();return (e.clientX-r.left)/r.width*W;}
+function py(e){const r=cv.getBoundingClientRect();return (e.clientY-r.top)/r.height*H;}
+let downX=0,downY=0;
+cv.addEventListener('pointerdown',e=>{aiming=true;aimX=downX=px(e);downY=py(e);cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{if(aiming||e.pointerType==='mouse')aimX=px(e);});
+cv.addEventListener('pointerup',e=>{if(!aiming)return;aiming=false;aimX=px(e);
+  if(Math.abs(aimX-downX)<12&&tryDeliver(downX,downY))return;drop(aimX);});
+cv.addEventListener('pointercancel',()=>{aiming=false;});
+$('shakeBtn').onclick=shake;$('pressBtn').onclick=()=>collapse('');
+addEventListener('resize',resize);new ResizeObserver(resize).observe($('area'));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else lastT=performance.now();});
+
+function start(hot){
+  let d=null;try{d=JSON.parse(localStorage.getItem('fusion-core'));}catch(e){}
+  load(hot&&hot.coins!==undefined?hot:d);
+  applyClass();next=rollTier();resize();renderUps();renderStars();renderChain();hud();
+  window.claude?.hot?.snapshot?.(snap);
+  requestAnimationFrame(frame);
+}
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??null);
+})();
+</script>
+
+</body></html>
